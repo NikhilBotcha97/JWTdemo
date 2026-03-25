@@ -19,15 +19,31 @@ namespace JWTdemo.Controllers
         }
 
         // 🔹 GET ALL USERS
-        [HttpGet]
-        public async Task<IActionResult> GetUsers()
-        {
-            var users = await _context.Users
-                .Select(u => new { u.Id, u.Username, u.Role })
-                .ToListAsync();
+       [HttpGet]
+       public async Task<IActionResult> GetUsers(int pageNumber = 1, int pageSize = 10)
+       {
+          if (pageNumber < 1 || pageSize <= 0)
+          return BadRequest("Invalid pagination parameters");
 
-            return Ok(users);
-        }
+          pageSize = Math.Min(pageSize, 50);
+
+         var totalUsers = await _context.Users.CountAsync();
+
+         var users = await _context.Users
+         .OrderBy(u => u.Id) // VERY IMPORTANT
+         .Skip((pageNumber - 1) * pageSize)
+         .Take(pageSize)
+         .Select(u => new { u.Id, u.Username, u.Role })
+         .ToListAsync();
+
+          return Ok(new
+          {
+            TotalUsers = totalUsers,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+             Data = users
+         });
+       }
 
         // 🔹 GET USER BY ID
         [HttpGet("{id}")]
